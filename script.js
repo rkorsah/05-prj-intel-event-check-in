@@ -5,9 +5,11 @@ const greeting = document.getElementById('greeting');
 const attendeeCount = document.getElementById('attendeeCount');
 const progressContainer = document.querySelector('.progress-container');
 const progressBar = document.getElementById('progressBar');
+const capacityMessage = document.getElementById('capacityMessage');
 const rosterCount = document.getElementById('rosterCount');
 const emptyRoster = document.getElementById('emptyRoster');
 const attendeeList = document.getElementById('attendeeList');
+const teamLead = document.getElementById('teamLead');
 
 const teamNames = {
 	water: 'Team Water Wise',
@@ -26,7 +28,10 @@ function updateAttendance() {
 
 	attendeeCount.textContent = attendees.length;
 	progressContainer.setAttribute('aria-valuenow', attendees.length);
-	progressBar.style.width = `${attendees.length * 2}%`;
+	progressBar.style.width = `${attendees.length / 50 * 100}%`;
+	capacityMessage.textContent = attendees.length >= 50
+		? 'Summit is at capacity'
+		: `${50 - attendees.length} spots available`;
 	rosterCount.textContent = attendees.length === 1
 		? '1 person'
 		: `${attendees.length} people`;
@@ -48,9 +53,44 @@ function updateAttendance() {
 		attendeeList.appendChild(listItem);
 	}
 
-	document.getElementById('waterCount').textContent = teamCounts.water;
-	document.getElementById('zeroCount').textContent = teamCounts.zero;
-	document.getElementById('powerCount').textContent = teamCounts.power;
+	const teamKeys = ['water', 'zero', 'power'];
+	let highestCount = 0;
+
+	for (let index = 0; index < teamKeys.length; index++) {
+		const teamKey = teamKeys[index];
+		const count = teamCounts[teamKey];
+		const share = attendees.length === 0 ? 0 : Math.round(count / attendees.length * 100);
+		const teamCard = document.querySelector(`.team-card.${teamKey}`);
+		const teamProgress = teamCard.querySelector('.team-progress');
+
+		document.getElementById(`${teamKey}Count`).textContent = count;
+		document.getElementById(`${teamKey}Share`).textContent = `${share}% of turnout`;
+		document.getElementById(`${teamKey}Bar`).style.width = `${share}%`;
+		teamProgress.setAttribute('aria-valuenow', share);
+		highestCount = Math.max(highestCount, count);
+	}
+
+	if (highestCount === 0) {
+		teamLead.textContent = 'Ready to welcome you';
+	} else {
+		const leaders = teamKeys.filter(function (teamKey) {
+			return teamCounts[teamKey] === highestCount;
+		});
+
+		for (let index = 0; index < teamKeys.length; index++) {
+			const teamKey = teamKeys[index];
+			const standing = document.getElementById(`${teamKey}Standing`);
+			standing.textContent = teamCounts[teamKey] === highestCount
+				? (leaders.length > 1 ? 'Tied for lead' : 'Leading')
+				: 'In the race';
+		}
+
+		if (leaders.length > 1) {
+			teamLead.textContent = 'It’s a tie at the top';
+		} else {
+			teamLead.textContent = `${teamNames[leaders[0]]} is leading`;
+		}
+	}
 }
 
 checkInForm.addEventListener('submit', function (event) {
