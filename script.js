@@ -6,6 +6,8 @@ const attendeeCount = document.getElementById('attendeeCount');
 const progressContainer = document.querySelector('.progress-container');
 const progressBar = document.getElementById('progressBar');
 const capacityMessage = document.getElementById('capacityMessage');
+const goalCelebration = document.getElementById('goalCelebration');
+const celebrationWinner = document.getElementById('celebrationWinner');
 const rosterCount = document.getElementById('rosterCount');
 const emptyRoster = document.getElementById('emptyRoster');
 const attendeeList = document.getElementById('attendeeList');
@@ -70,25 +72,48 @@ function updateAttendance() {
 		highestCount = Math.max(highestCount, count);
 	}
 
+	let leaders = [];
+	if (highestCount > 0) {
+		leaders = teamKeys.filter(function (teamKey) {
+			return teamCounts[teamKey] === highestCount;
+		});
+	}
+
 	if (highestCount === 0) {
 		teamLead.textContent = 'Ready to welcome you';
 	} else {
-		const leaders = teamKeys.filter(function (teamKey) {
-			return teamCounts[teamKey] === highestCount;
-		});
-
 		for (let index = 0; index < teamKeys.length; index++) {
 			const teamKey = teamKeys[index];
 			const standing = document.getElementById(`${teamKey}Standing`);
-			standing.textContent = teamCounts[teamKey] === highestCount
-				? (leaders.length > 1 ? 'Tied for lead' : 'Leading')
-				: 'In the race';
+			const teamCard = document.querySelector(`.team-card.${teamKey}`);
+			const isWinner = attendees.length >= 50 && teamCounts[teamKey] === highestCount;
+
+			if (isWinner) {
+				teamCard.classList.add('is-winner');
+				standing.textContent = leaders.length > 1 ? 'Tied winner' : 'Summit winner';
+			} else {
+				teamCard.classList.remove('is-winner');
+				standing.textContent = teamCounts[teamKey] === highestCount
+					? (leaders.length > 1 ? 'Tied for lead' : 'Leading')
+					: 'In the race';
+			}
 		}
 
 		if (leaders.length > 1) {
 			teamLead.textContent = 'It’s a tie at the top';
 		} else {
 			teamLead.textContent = `${teamNames[leaders[0]]} is leading`;
+		}
+	}
+
+	goalCelebration.hidden = attendees.length < 50;
+	if (attendees.length >= 50) {
+		if (leaders.length > 1) {
+			celebrationWinner.textContent = `A tie! ${leaders.map(function (teamKey) {
+				return teamNames[teamKey];
+			}).join(' and ')} share the lead with ${highestCount} attendees each.`;
+		} else {
+			celebrationWinner.textContent = `${teamNames[leaders[0]]} leads the summit with ${highestCount} attendees.`;
 		}
 	}
 }
